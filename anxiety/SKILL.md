@@ -157,6 +157,13 @@ hedging density, PII/secret patterns, hardcoded model cells) are advisory and of
 code, inline code, quoted spans, block quotes, and example/sample/illustrative sections are
 stripped first) so quoted or illustrative text is not mistaken for the author's own claim.
 
+The deterministic Correctness and Excel checks (figure reconciliation, currency/measurement
+basis, formula errors, metric keying) are tuned for finance / consulting / due-diligence work;
+on other kinds of deliverable they fire less, and Coverage plus the agent-mediated reasoning in
+Step 2 (with a tailored `--checklist`) carry more of the load. The scanner also flags when the
+extracted text looks garbled (`extraction_ok: false`) so findings from a bad extraction aren't
+trusted silently.
+
 The full per-phase catalogue is in `references/scanner-checks.md`; the machine-category list is in
 `references/register-schema.md`.
 

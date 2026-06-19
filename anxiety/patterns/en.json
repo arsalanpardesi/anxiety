@@ -46,5 +46,30 @@
     "growth basis": ["\\bCAGR\\b", "\\byear[- ]over[- ]year\\b|\\bYoY\\b"],
     "value basis": ["\\bnominal\\b", "\\breal\\s+terms?\\b|\\bin\\s+real\\b"],
     "period basis": ["\\bper\\s+annum\\b|\\bannual(?:ly|i[sz]ed)?\\b", "\\bper\\s+month\\b|\\bmonthly\\b"]
+  },
+  "growth_context": "\\bgr(?:ew|ow(?:s|n|ing|th)?)\\b|\\bincreas(?:e|ed|ing)\\b|\\brose\\b|\\brising\\b|\\bCAGR\\b|\\bcompounded?\\b|\\byear[- ]over[- ]year\\b|\\bYoY\\b|\\bY/Y\\b|\\bmultiple\\b",
+  "metric_aliases": {
+    "revenue": ["revenue", "revenues", "net sales", "sales", "turnover", "top line"],
+    "revenue growth": ["revenue growth", "sales growth"],
+    "gross profit": ["gross profit"],
+    "gross margin": ["gross margin"],
+    "operating margin": ["operating margin"],
+    "ebitda margin": ["ebitda margin"],
+    "net margin": ["net margin"],
+    "ebitda": ["adjusted ebitda", "ebitda"],
+    "ebit": ["operating income", "operating profit", "ebit"],
+    "net income": ["net income", "net profit", "net earnings", "bottom line"],
+    "net debt": ["net debt"],
+    "gross debt": ["gross debt", "total debt"],
+    "enterprise value": ["enterprise value", "ev"],
+    "equity value": ["equity value", "market capitalization", "market cap"],
+    "capex": ["capital expenditures", "capital expenditure", "capex"],
+    "free cash flow": ["free cash flow", "fcf"],
+    "working capital": ["net working capital", "working capital", "nwc"],
+    "headcount": ["headcount", "employees", "fte"],
+    "arr": ["annual recurring revenue", "arr"],
+    "churn": ["churn rate", "churn"],
+    "market size": ["addressable market", "market size", "tam"],
+    "cagr": ["cagr"]
   }
 }

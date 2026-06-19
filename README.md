@@ -121,8 +121,8 @@ python scripts/extract_text.py <file> [out.md]
 
 *Phase 2 — Correctness*
 - **Mixed direction-of-change signals** — one sentence asserting both up and down for a metric.
-- **Extreme / implausible percentages** — values >100% outside a growth-rate context.
-- **Inconsistent figures** — the same labeled quantity stated with different values.
+- **Extreme / implausible percentages** — values >100% outside a growth/CAGR context (a figure next to cues like "grew", "rose", "CAGR", or "year over year" is treated as normal growth, not an error).
+- **Inconsistent figures** — the same metric stated with different values. Figures are keyed by the metric named nearest before them on the line (canonical names, longest match wins), so re-wordings of one metric are compared together while distinct metrics that share a word — `revenue` vs `revenue growth`, `gross` vs `operating margin` — stay separate.
 - **Table / body mismatch** — a labeled figure that differs between a table and the prose.
 - **Post-cutoff data** — years in the body that postdate the stated scope cut-off (with `--context`).
 - **Mixed currency** — two or more currencies used without a stated conversion basis.
@@ -132,6 +132,8 @@ python scripts/extract_text.py <file> [out.md]
 - **Hallucination patterns** — false claims of interviews, site visits, surveys, or testing.
 
 Figure comparisons tolerate rounding: values within 1%, and magnitude restatements like `$5M` vs `$5,000,000`, are treated as the same number rather than a conflict.
+
+After extraction, a best-effort heuristic checks the text isn't garbled (replacement characters, a high share of unusual symbols, or lost word spacing — common when a PDF uses an unsupported font/encoding). If it looks garbled the run sets `extraction_ok: false` in the register and prints a warning, so findings from a bad extraction aren't trusted silently. Digits and ordinary punctuation don't count against it, so numeric tables and spreadsheets aren't mistaken for garbage. It never blocks the scan.
 
 *Phase 3 — Adversarial*
 - **Deferred analysis** — "should be analyzed", "requires further review", "was not available".
@@ -289,6 +291,9 @@ anxiety/                          # Repo wrapper: docs + the shippable skill fol
 ├── README.md                     # This file
 ├── assets/
 │   └── anxiety-mascot.svg        # README header illustration
+├── .github/workflows/tests.yml   # CI: runs the test suite on Python 3.8–3.12
+├── tests/
+│   └── test_anxiety.py           # Stdlib unittest suite (extractor, parsers, every check, CLI)
 └── anxiety/                      # The shippable skill (point your agent here)
     ├── SKILL.md                  # Skill definition and agent instructions
     ├── patterns/
@@ -305,6 +310,16 @@ anxiety/                          # Repo wrapper: docs + the shippable skill fol
 ## Requirements
 
 - Python 3.8+ (standard library only — no `pip install` required).
+
+## Tests
+
+The suite is stdlib-only (`unittest`), mirroring the skill's no-dependency promise. It covers the
+extractor, the number/currency parsers, every scanner check, the extraction-quality gate, the
+diagnostic-only invariant, and CLI behaviour. CI runs it on Python 3.8–3.12.
+
+```bash
+python -m unittest discover -s tests -p "test_*.py"
+```
 
 ## Trigger phrases
 

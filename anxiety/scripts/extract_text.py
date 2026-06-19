@@ -688,6 +688,43 @@ def load_deliverable_text(path: str) -> str:
     return p.read_text(encoding="utf-8", errors="replace")
 
 
+# Characters that are normal in real deliverables (prose, tables, spreadsheets, finance
+# notation). Anything outside this set AND not alphanumeric/whitespace is treated as "weird"
+# - digits and ordinary punctuation are NOT weird, so a numbers-heavy spreadsheet is fine.
+_OK_PUNCT = set(" \t\n\r.,;:!?'\"()[]{}<>/\\|-_=+*&%$#@~`^…—–’‘“”€£¥₹₩₽₺₪฿•·°§©®™±×÷")
+
+
+def extraction_quality(text: str) -> Tuple[bool, str]:
+    """Heuristic sanity check that extracted text is readable, not garbled.
+
+    Catches the common failure mode where a PDF (or other source) extracts but the text is
+    mojibake - replacement characters, a high share of unusual symbols, or lost word spacing -
+    which would then silently drive bad findings. It deliberately does NOT penalize digits or
+    ordinary punctuation, so numeric tables and spreadsheets are not mistaken for garbage.
+    Returns (ok, reason); ok=True with an empty reason when the text looks fine. Best-effort and
+    never raises; it only samples the start of the document.
+    """
+    sample = text[:20000]
+    n = len(sample)
+    if n < 200:
+        return True, ""  # too little text to judge; don't cry wolf
+    repl = sample.count("�")
+    if repl / n > 0.02:
+        return False, (f"{repl} replacement character(s) (~{repl / n:.0%} of the sample); "
+                       "the extraction likely hit an unsupported font/encoding")
+    weird = sum(1 for c in sample if not (c.isalnum() or c.isspace() or c in _OK_PUNCT))
+    if weird / n > 0.15:
+        return False, (f"~{weird / n:.0%} of characters are unusual symbols; the extracted text "
+                       "may be garbled (e.g. an unsupported font/encoding)")
+    words = sample.split()
+    if words:
+        avg = sum(len(w) for w in words) / len(words)
+        if avg > 25:
+            return False, (f"average token length is {avg:.0f} characters; word spacing was "
+                           "probably lost in extraction")
+    return True, ""
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("Usage: python extract_text.py <file> [out.md]")

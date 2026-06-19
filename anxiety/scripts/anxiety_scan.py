@@ -35,7 +35,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from extract_text import ExtractionError, load_deliverable_text, read_xlsx_cells  # noqa: E402
+from extract_text import (ExtractionError, extraction_quality,  # noqa: E402
+                          load_deliverable_text, read_xlsx_cells)
 
 CRITICAL, HIGH, MEDIUM, LOW = "critical", "high", "medium", "low"
 _SEVERITY_ORDER = {CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3}
@@ -118,6 +119,40 @@ _DEFAULT_PATTERNS: Dict[str, Any] = {
         "growth basis": [r"\bCAGR\b", r"\byear[- ]over[- ]year\b|\bYoY\b"],
         "value basis": [r"\bnominal\b", r"\breal\s+terms?\b|\bin\s+real\b"],
         "period basis": [r"\bper\s+annum\b|\bannual(?:ly|i[sz]ed)?\b", r"\bper\s+month\b|\bmonthly\b"],
+    },
+    # A percentage > 100% is normal inside a growth/CAGR context, so the extreme-percentage
+    # check is suppressed when any of these cues sit near the value.
+    "growth_context": (
+        r"\bgr(?:ew|ow(?:s|n|ing|th)?)\b|\bincreas(?:e|ed|ing)\b|\brose\b|\brising\b|"
+        r"\bCAGR\b|\bcompounded?\b|\byear[- ]over[- ]year\b|\bYoY\b|\bY/Y\b|\bmultiple\b"
+    ),
+    # Canonical metric names -> the surface phrases that denote them. Used to key figures by
+    # the metric they describe (order-independent), so the same metric stated two different
+    # ways is recognized as one quantity. Longest matching surface in a figure's sentence wins,
+    # so "revenue growth" / "gross margin" don't collapse into "revenue" / "margin".
+    "metric_aliases": {
+        "revenue": ["revenue", "revenues", "net sales", "sales", "turnover", "top line"],
+        "revenue growth": ["revenue growth", "sales growth"],
+        "gross profit": ["gross profit"],
+        "gross margin": ["gross margin"],
+        "operating margin": ["operating margin"],
+        "ebitda margin": ["ebitda margin"],
+        "net margin": ["net margin"],
+        "ebitda": ["adjusted ebitda", "ebitda"],
+        "ebit": ["operating income", "operating profit", "ebit"],
+        "net income": ["net income", "net profit", "net earnings", "bottom line"],
+        "net debt": ["net debt"],
+        "gross debt": ["gross debt", "total debt"],
+        "enterprise value": ["enterprise value", "ev"],
+        "equity value": ["equity value", "market capitalization", "market cap"],
+        "capex": ["capital expenditures", "capital expenditure", "capex"],
+        "free cash flow": ["free cash flow", "fcf"],
+        "working capital": ["net working capital", "working capital", "nwc"],
+        "headcount": ["headcount", "employees", "fte"],
+        "arr": ["annual recurring revenue", "arr"],
+        "churn": ["churn rate", "churn"],
+        "market size": ["addressable market", "market size", "tam"],
+        "cagr": ["cagr"],
     },
 }
 
@@ -400,7 +435,55 @@ def _parse_amount(s: str) -> Optional[float]:
         return None
 
 
-def _extract_labeled_figures(text: str) -> List[Dict]:
+def _build_metric_aliases(pat: Dict[str, Any]) -> List[Tuple[str, Any]]:
+    """Compile (canonical_name, surface_regex) pairs from the pattern pack's metric_aliases."""
+    out: List[Tuple[str, Any]] = []
+    for canon, surfaces in (pat.get("metric_aliases") or {}).items():
+        for s in surfaces:
+            if s:
+                out.append((canon, re.compile(r"\b" + re.escape(str(s)) + r"\b", re.IGNORECASE)))
+    return out
+
+
+def _metric_key(text: str, fig_start: int, fig_end: int,
+                aliases: List[Tuple[str, Any]]) -> Optional[str]:
+    """Canonical metric for a figure, taken from metric words on the figure's own line.
+
+    Matching is confined to the line (so a metric in the next sentence/heading can't leak in),
+    and picks the metric nearest *before* the number - the way "Revenue was $5M and EBITDA was
+    $2M" reads. Ties prefer the longer surface, so "revenue growth" wins over "revenue" and
+    "gross margin" over "margin" - distinct metrics that merely share a word stay separate.
+    """
+    line_start = text.rfind("\n", 0, fig_start) + 1
+    line_end = text.find("\n", fig_end)
+    if line_end == -1:
+        line_end = len(text)
+
+    before = text[line_start:fig_start]
+    best = None  # (start_index, surface_length, canonical) - nearest-preceding wins on tuple cmp
+    for canon, rx in aliases:
+        for mm in rx.finditer(before):
+            cand = (mm.start(), mm.end() - mm.start(), canon)
+            if best is None or cand[:2] > best[:2]:
+                best = cand
+    if best is not None:
+        return best[2]
+
+    # No metric precedes the number on this line; accept the nearest one that follows it
+    # (handles "$5M in revenue"), still confined to the same line.
+    after = text[fig_end:line_end]
+    best = None  # (-start_index, surface_length, canonical) - smallest start (nearest) wins
+    for canon, rx in aliases:
+        mm = rx.search(after)
+        if mm:
+            cand = (-mm.start(), mm.end() - mm.start(), canon)
+            if best is None or cand[:2] > best[:2]:
+                best = cand
+    return best[2] if best is not None else None
+
+
+def _extract_labeled_figures(text: str,
+                             aliases: Optional[List[Tuple[str, Any]]] = None) -> List[Dict]:
     figures = []
     for m in _FIGURE_RE.finditer(text):
         num = m.group("n1") or m.group("n2")
@@ -412,9 +495,15 @@ def _extract_labeled_figures(text: str) -> List[Dict]:
         mag = (m.group("m1") or m.group("m2") or "").lower()
         if mag:
             val *= _MAGNITUDES.get(mag, 1)
-        start = max(0, m.start() - 45)
-        label = re.sub(r"\s+", " ", text[start:m.start()]).strip().lower()
-        label = " ".join(_significant_words(label)[-3:])
+        # Prefer a canonical metric key (order-independent) from the figure's surrounding
+        # sentence; fall back to the positional last-few-words label when no metric is named.
+        label = ""
+        if aliases:
+            label = _metric_key(text, m.start(), m.end(), aliases) or ""
+        if not label:
+            start = max(0, m.start() - 45)
+            label = re.sub(r"\s+", " ", text[start:m.start()]).strip().lower()
+            label = " ".join(_significant_words(label)[-3:])
         figures.append({"value": val, "raw": m.group(0).strip(), "label": label})
     return figures
 
@@ -464,8 +553,10 @@ def _phase2_correctness(text: str, context: str, pat: Dict[str, Any]) -> List[Di
             remediation="Review each line; make the directional language match the underlying data.",
         ))
 
+    aliases = _build_metric_aliases(pat)
+
     # Inconsistent labeled figures
-    figs = _extract_labeled_figures(text)
+    figs = _extract_labeled_figures(text, aliases)
     by_label: Dict[str, set] = {}
     for f in figs:
         if f["label"]:
@@ -484,17 +575,22 @@ def _phase2_correctness(text: str, context: str, pat: Dict[str, Any]) -> List[Di
             "contexts explicitly).",
         ))
 
-    # Extreme percentages
+    # Extreme percentages (suppressed inside a growth/CAGR context, where >100% is normal:
+    # "grew 250% year over year" is not an error, but a 250% margin is).
+    growth_ctx = re.compile(pat.get("growth_context", r"(?!x)x"), re.IGNORECASE)
     extreme = []
     for m in re.finditer(r"(\d+(?:\.\d+)?)\s*%", text):
         try:
             val = float(m.group(1))
         except ValueError:
             continue
-        window = text[max(0, m.start() - 60):m.end() + 20].lower()
-        if val > 500 or (val > 100 and "cagr" not in window and "growth" not in window):
-            ctx = re.sub(r"\s+", " ", text[max(0, m.start() - 40):m.end() + 20]).strip()
-            extreme.append(f"{m.group(1)}% in: ...{ctx}...")
+        if val <= 100:
+            continue
+        window = text[max(0, m.start() - 60):m.end() + 20]
+        if growth_ctx.search(window):
+            continue
+        ctx = re.sub(r"\s+", " ", text[max(0, m.start() - 40):m.end() + 20]).strip()
+        extreme.append(f"{m.group(1)}% in: ...{ctx}...")
     if extreme:
         n += 1
         findings.append(_finding(
@@ -538,10 +634,10 @@ def _phase2_correctness(text: str, context: str, pat: Dict[str, Any]) -> List[Di
         (table_lines if line.strip().startswith("|") else body_lines).append(line)
     tmap: Dict[str, set] = {}
     bmap: Dict[str, set] = {}
-    for f in _extract_labeled_figures("\n".join(table_lines)):
+    for f in _extract_labeled_figures("\n".join(table_lines), aliases):
         if f["label"]:
             tmap.setdefault(f["label"], set()).add(round(f["value"], 2))
-    for f in _extract_labeled_figures("\n".join(body_lines)):
+    for f in _extract_labeled_figures("\n".join(body_lines), aliases):
         if f["label"]:
             bmap.setdefault(f["label"], set()).add(round(f["value"], 2))
     mismatches = [f"'{lab}': table {sorted(tmap[lab])} vs narrative {sorted(bmap[lab])}"
@@ -868,7 +964,7 @@ def verdict_for(findings: List[Dict]) -> str:
     return "clean"
 
 
-TOOL_VERSION = "0.1.0"
+TOOL_VERSION = "0.1.1"
 
 # The reasoning-only sub-checks the agent must complete in Step 2. The scanner cannot perform
 # these, so it seeds them as "pending"; the agent updates each to "completed"/"not_applicable".
@@ -970,6 +1066,7 @@ def build_register(deliverable_path: str, sources_dir: Optional[str], context: s
     if pat is None:
         pat, _ = load_patterns()
     text = load_deliverable_text(deliverable_path)
+    extraction_ok, extraction_note = extraction_quality(text)
     scan_text = _strip_noise(text)
     p1 = _phase1_coverage(text, sources_dir)
     if checklist:
@@ -1001,6 +1098,8 @@ def build_register(deliverable_path: str, sources_dir: Optional[str], context: s
         "deliverable_format": _format_label(deliverable_path),
         "language": pat.get("language", "en"),
         "context": context or "",
+        "extraction_ok": extraction_ok,
+        "extraction_warning": extraction_note,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "tool": {
             "name": "anxiety",
@@ -1146,6 +1245,11 @@ def main() -> int:
             print()
         except (ValueError, OSError) as exc:
             print(f"  Note:     could not diff baseline: {exc}\n")
+
+    if not register.get("extraction_ok", True):
+        print("  ⚠️  Extraction quality warning: " + register.get("extraction_warning", ""))
+        print("     Findings below may be unreliable. Prefer a higher-fidelity reader "
+              "(see SKILL.md) and re-run on its output.\n")
 
     s = register["summary"]
     print("Anxiety Register Results")

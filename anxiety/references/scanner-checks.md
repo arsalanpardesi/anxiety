@@ -12,8 +12,12 @@ For the machine-category names used in the register, see `register-schema.md`.
 
 ## Phase 2 - Correctness (is it actually right?)
 - Mixed direction-of-change signals - sentences asserting both up and down for one metric.
-- Extreme / implausible percentages - values >100% outside a growth-rate context.
-- Inconsistent figures - the same labeled quantity stated with different values.
+- Extreme / implausible percentages - values >100% outside a growth/CAGR context (a percentage
+  near growth cues like "grew", "rose", "CAGR", "year over year" is treated as normal, not an error).
+- Inconsistent figures - the same metric stated with different values. Figures are keyed by the
+  metric named nearest before them on the line (canonical `metric_aliases`, longest surface wins),
+  so re-wordings of one metric are compared together while distinct metrics sharing a word
+  ("revenue" vs "revenue growth") stay separate.
 - Table / body mismatch - a labeled figure that differs between a table and the narrative.
 - Post-cutoff data - years in the body that postdate the stated scope cut-off (needs `--context`).
 - Mixed currency - two or more currencies used without a conversion note.
@@ -29,6 +33,13 @@ For the machine-category names used in the register, see `register-schema.md`.
 - Orphan assertions - quantified claims with no source/citation nearby. *(advisory, `--advisory-checks`)*
 - Hedging-language density - "broadly", "approximately", "largely", etc. *(advisory, `--advisory-checks`)*
 - Confidentiality / PII exposure - emails, phone numbers, credentials, keys. *(advisory, `--advisory-checks`)*
+
+## Extraction quality
+After a deliverable is extracted, a best-effort heuristic checks the text isn't garbled
+(replacement characters, mostly non-letters, or lost word spacing — common when a PDF uses an
+unsupported font/encoding). If it looks garbled the run sets `extraction_ok: false` in the
+register, prints a warning, and the findings should be treated as unreliable until a
+higher-fidelity reader is used (see SKILL.md). It never blocks the scan.
 
 ## Advisory checks and de-noising
 Advisory checks are off by default because they misfire on real finance prose; enable them

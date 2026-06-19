@@ -24,10 +24,12 @@ list of machine categories (scanner-produced and agent-produced).
   "deliverable_format": "Word (.docx) | Excel (.xlsx) | PowerPoint (.pptx) | PDF (.pdf) | Markdown | Plain text",
   "language": "en",
   "context": "stated scope note, e.g. 'desk research only; no interviews'",
+  "extraction_ok": true,
+  "extraction_warning": "empty when extraction_ok; otherwise why the extracted text looks garbled",
   "timestamp": "ISO-8601 UTC",
   "tool": {
     "name": "anxiety",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "advisory_checks": false,
     "checklist": "Quality of Earnings | null"
   },
@@ -114,7 +116,16 @@ run on the original text.
 
 Numeric checks (`inconsistent_figures`, `table_body_mismatch`) treat values within 1% as equal,
 and normalize magnitudes (so `$5M` and `$5,000,000` match), so rounding is not flagged as a
-conflict.
+conflict. Figures are keyed by the **metric named nearest before them on their line** (canonical
+names from the pattern pack's `metric_aliases`, longest surface wins), so the same metric stated
+two different ways is compared as one quantity while distinct metrics that merely share a word
+(`revenue` vs `revenue growth`, `gross` vs `operating margin`) are kept separate. When no metric
+is named, the check falls back to the words immediately preceding the number.
+
+`extraction_ok` / `extraction_warning` carry a best-effort heuristic on the extracted text: if it
+looks garbled (replacement characters, mostly non-letters, or lost word spacing — common when a
+PDF uses an unsupported font/encoding), `extraction_ok` is `false` and the findings should be
+treated as unreliable until a higher-fidelity reader is used (see SKILL.md).
 
 ## Checklist file (`--checklist`)
 
