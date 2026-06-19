@@ -1,0 +1,50 @@
+{
+  "language": "en",
+  "stopwords": [
+    "the", "and", "for", "with", "from", "this", "that", "into", "your", "their",
+    "report", "memo", "draft", "final", "notes", "copy", "version", "document",
+    "analysis", "summary", "overview", "data", "file", "sheet", "page", "appendix"
+  ],
+  "direction_positive": [
+    "\\bincreas(?:ed|ing)\\b", "\\bgr[eo]w(?:th|n|ing)?\\b", "\\bimproved?\\b",
+    "\\brose\\b", "\\brising\\b", "\\bhigher\\b", "\\bup\\b"
+  ],
+  "direction_negative": [
+    "\\bdeclin(?:ed|ing|e)\\b", "\\bfell\\b", "\\breduced?\\b", "\\bdropped?\\b",
+    "\\bdecreas(?:ed|ing)\\b", "\\bdeteriorat(?:ed|ing)\\b", "\\blower(?:ed)?\\b"
+  ],
+  "hallucination_patterns": [
+    ["(?:\\d+|one|two|three|four|five|several|multiple)\\s+interviews?\\s+(?:were|was|conducted)", "claims interviews were conducted"],
+    ["(?:we|our team|the team)\\s+(?:conducted|performed|held)\\s+(?:a\\s+)?(?:site\\s+visit|interview|workshop|survey)", "claims a visit/interview/workshop/survey was conducted"],
+    ["management\\s+(?:confirmed|stated|indicated)\\s+(?:during|in)\\s+(?:our|the)\\s+(?:session|call|meeting|interview)", "claims management confirmed during a session"],
+    ["(?:expert|management|stakeholder)\\s+(?:call|session|interview)\\s+(?:on|dated|of)\\s+\\d", "references a specific dated call/session"],
+    ["(?:interviews?|discussions?|conversations?)\\s+with\\s+(?:key\\s+)?(?:management|personnel|staff|stakeholders|participants)", "claims interviews/discussions with people"],
+    ["(?:physical|on-?site)\\s+(?:inspection|assessment|review|observation)\\s+(?:revealed|confirmed|showed|found)", "claims on-site inspection findings"],
+    ["(?:we\\s+)?(?:observed|inspected|toured|visited)\\s+(?:the\\s+)?(?:plant|facility|site|office|premises)", "claims direct observation of a facility"],
+    ["(?:our\\s+)?testing\\s+(?:confirmed|revealed|showed|demonstrated)", "claims testing was performed"],
+    ["(?:a\\s+)?survey\\s+of\\s+\\d+\\s+(?:respondents?|participants?|customers?|users?)", "claims a quantified survey"]
+  ],
+  "scope_none_pattern": "(?:desk\\s+research\\s+only|no\\s+(?:interviews?|management\\s+access|site\\s+visits?|primary\\s+research)|access\\s*[:\\-]\\s*none|secondary\\s+sources\\s+only)",
+  "hedges": [
+    "\\bbroadly\\b", "\\bapproximately\\b", "\\blargely\\b", "\\bessentially\\b",
+    "\\broughly\\b", "\\bgenerally\\b", "\\btypically\\b", "\\bsubstantially\\b",
+    "\\bmostly\\b", "\\brelatively\\b", "\\bsomewhat\\b", "\\bfairly\\b"
+  ],
+  "deferred": [
+    ["should\\s+be\\s+analy[sz]ed", "should be analyzed"],
+    ["should\\s+be\\s+reviewed", "should be reviewed"],
+    ["requires?\\s+further\\s+(?:analysis|investigation|review|work)", "requires further analysis"],
+    ["could\\s+not\\s+(?:be\\s+)?(?:confirmed|verified|validated)", "could not be confirmed"],
+    ["was\\s+not\\s+(?:available|provided|disclosed)", "was not available"],
+    ["(?:insufficient|limited)\\s+(?:data|evidence|information)", "insufficient data"],
+    ["to\\s+be\\s+(?:determined|confirmed)|\\bTBD\\b|\\bTBC\\b", "to be determined"]
+  ],
+  "citation_hint": "(?:source\\s*[:\\-]|ref\\s*[:\\-]|cite|citation|per\\s+the|according\\s+to|see\\s+(?:table|figure|appendix|section|exhibit)|\\[\\d+\\]|\\(\\d{4}\\)|et\\s+al\\.|https?://|footnote|endnote)",
+  "superlative_pattern": "\\b(?:the\\s+)?(?:most|least|best|worst|highest|lowest|largest|smallest|strongest|weakest|fastest|slowest|leading)\\b",
+  "superlative_qualifier_pattern": "benchmark|peer|comparator|sector|industry|quartile|median|percentile|compared\\s+to|relative\\s+to|versus|vs\\.?",
+  "baseline_groups": {
+    "growth basis": ["\\bCAGR\\b", "\\byear[- ]over[- ]year\\b|\\bYoY\\b"],
+    "value basis": ["\\bnominal\\b", "\\breal\\s+terms?\\b|\\bin\\s+real\\b"],
+    "period basis": ["\\bper\\s+annum\\b|\\bannual(?:ly|i[sz]ed)?\\b", "\\bper\\s+month\\b|\\bmonthly\\b"]
+  }
+}

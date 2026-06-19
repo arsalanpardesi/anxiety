@@ -1,0 +1,55 @@
+# Python bytecode cache (auto-generated, machine-specific)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Python build / packaging artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# Test / coverage / type-check caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+
+# Anxiety scan output (generated next to the deliverable)
+*.anxiety.json
+*.anxiety.md
+*.anxiety.diff.md
+*.anxiety.checklist.json
+
+# Internal planning notes (not shipped)
+future-features.md
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS cruft
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Logs / temp
+*.log
+*.tmp

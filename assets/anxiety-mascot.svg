@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 360" width="760" height="360" font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="75%">
+      <stop offset="0%" stop-color="#fff7e6"/>
+      <stop offset="100%" stop-color="#ffe2b8"/>
+    </radialGradient>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe14d"/>
+      <stop offset="100%" stop-color="#ffc21f"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="760" height="360" rx="24" fill="url(#bg)"/>
+
+  <!-- shaky vibration lines -->
+  <g stroke="#e8821e" stroke-width="5" stroke-linecap="round" opacity="0.8">
+    <path d="M120 95 q12 -14 0 -28"/>
+    <path d="M104 110 q18 -20 0 -40"/>
+    <path d="M360 95 q-12 -14 0 -28"/>
+    <path d="M376 110 q-18 -20 0 -40"/>
+  </g>
+
+  <!-- head -->
+  <circle cx="240" cy="190" r="120" fill="url(#face)" stroke="#e8821e" stroke-width="6"/>
+
+  <!-- worried eyebrows -->
+  <path d="M150 120 q34 -22 70 -2" fill="none" stroke="#7a4b00" stroke-width="8" stroke-linecap="round"/>
+  <path d="M262 118 q34 -20 68 4" fill="none" stroke="#7a4b00" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- big wide eyes looking in different directions -->
+  <circle cx="195" cy="170" r="40" fill="#ffffff" stroke="#7a4b00" stroke-width="4"/>
+  <circle cx="295" cy="170" r="40" fill="#ffffff" stroke="#7a4b00" stroke-width="4"/>
+  <circle cx="180" cy="180" r="14" fill="#222"/>
+  <circle cx="308" cy="160" r="14" fill="#222"/>
+  <circle cx="176" cy="175" r="4" fill="#fff"/>
+  <circle cx="304" cy="155" r="4" fill="#fff"/>
+
+  <!-- gritted-teeth nervous mouth -->
+  <rect x="180" y="240" width="120" height="34" rx="10" fill="#ffffff" stroke="#7a4b00" stroke-width="4"/>
+  <g stroke="#7a4b00" stroke-width="3">
+    <line x1="200" y1="240" x2="200" y2="274"/>
+    <line x1="220" y1="240" x2="220" y2="274"/>
+    <line x1="240" y1="240" x2="240" y2="274"/>
+    <line x1="260" y1="240" x2="260" y2="274"/>
+    <line x1="280" y1="240" x2="280" y2="274"/>
+  </g>
+
+  <!-- sweat drops -->
+  <path d="M330 150 q10 22 0 34 q-12 -2 -12 -18 q0 -10 12 -16 z" fill="#4fc3f7" stroke="#2196f3" stroke-width="2"/>
+  <path d="M150 132 q9 18 0 28 q-10 -2 -10 -15 q0 -8 10 -13 z" fill="#4fc3f7" stroke="#2196f3" stroke-width="2"/>
+
+  <!-- thought bubble -->
+  <g>
+    <circle cx="400" cy="250" r="10" fill="#ffffff" stroke="#e8821e" stroke-width="3"/>
+    <circle cx="425" cy="225" r="16" fill="#ffffff" stroke="#e8821e" stroke-width="3"/>
+    <rect x="450" y="70" width="280" height="120" rx="24" fill="#ffffff" stroke="#e8821e" stroke-width="3"/>
+    <text x="590" y="115" text-anchor="middle" font-size="22" font-weight="700" fill="#cc5500">Wait... did I</text>
+    <text x="590" y="148" text-anchor="middle" font-size="22" font-weight="700" fill="#cc5500">source that figure?!</text>
+    <text x="590" y="176" text-anchor="middle" font-size="15" fill="#9a6a1f">...and were those interviews real??</text>
+  </g>
+</svg>
